@@ -1,161 +1,104 @@
-from sklearn.linear_model import Ridge, Lasso, ElasticNet
-from sklearn.ensemble import (RandomForestRegressor, ExtraTreesRegressor,
-    AdaBoostRegressor, BaggingRegressor, 
-    GradientBoostingRegressor, HistGradientBoostingRegressor)
-from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
-from sklearn.metrics import r2_score
-from sklearn.inspection import permutation_importance
-from xgboost import XGBRegressor
-import matplotlib.pyplot as plt
-import numpy as np
+from sklearn.model_selection import TimeSeriesSplit, RandomizedSearchCV
+from sklearn.metrics import mean_absolute_error
+from sklearn.base import clone
+import pandas as pd
+
+from model_grid import get_model_grids
 
 
-def get_model_grids():
-    return {
-        'Ridge': {
-            'model': Ridge(),
-            'param_grid': {
-                'alpha': [0.01, 0.1, 1, 10],
-                'fit_intercept': [True, False],
-                'solver': ['auto', 'cholesky', 'lsqr'],
-            },
-        },
-        'Lasso': {
-            'model': Lasso(),
-            'param_grid': {
-                'alpha': [0.001, 0.01, 0.1, 1],
-                'fit_intercept': [True, False],
-                'max_iter': [1000, 5000],
-            },
-        },
-        'ElasticNet': {
-            'model': ElasticNet(),
-            'param_grid': {
-                'alpha': [0.001, 0.01, 0.1],
-                'l1_ratio': [0.3, 0.5, 0.7],
-                'max_iter': [1000, 5000],
-            },
-        },
-        'RandomForest': {
-            'model': RandomForestRegressor(random_state=42),
-            'param_grid': {
-                'n_estimators': [100, 200],
-                'max_depth': [3, 5, 7, None],
-                'min_samples_leaf': [1, 3, 5],
-            },
-        },
-        'AdaBoost': {
-            'model': AdaBoostRegressor(random_state=42),
-            'param_grid': {
-                'n_estimators': [50, 100, 200],
-                'learning_rate': [0.01, 0.1, 0.5],
-            },
-        },
-        'ExtraTrees': {
-            'model': ExtraTreesRegressor(random_state=42),
-            'param_grid': {
-                'n_estimators': [100, 200],
-                'max_depth': [3, 5, 7, None],
-                'min_samples_leaf': [1, 3, 5],
-            },
-        },
-        'Bagging': {
-            'model': BaggingRegressor(random_state=42),
-            'param_grid': {
-                'n_estimators': [10, 50, 100],
-                'max_samples': [0.5, 0.8, 1.0],
-            },
-        },
-        'GradientBoosting': {
-            'model': GradientBoostingRegressor(random_state=42),
-            'param_grid': {
-                'n_estimators': [100, 200],
-                'max_depth': [3, 5, 7],
-                'learning_rate': [0.01, 0.05, 0.1],
-            },
-        },
-        'HistGBR': {
-            'model': HistGradientBoostingRegressor(random_state=42),
-            'param_grid': {
-                'max_iter': [100, 200, 500],
-                'max_depth': [3, 5, 7],
-                'learning_rate': [0.01, 0.05, 0.1],
-            },
-        },
-        'XGBoost': {
-            'model': XGBRegressor(random_state=42),
-            'param_grid': {
-                'n_estimators': [100, 200, 500],
-                'max_depth': [3, 5, 7],
-                'learning_rate': [0.01, 0.05, 0.1],
-            },
-        },
-    }
-
-
-def run_grid_search(X_train, y_train, X_val, y_val, n_splits=5):
-    grid_results = {}
+def run_randomized_search(X_train, y_train, gap, n_splits=5, n_iter=50, random_state=42):
+    search_results = {}
+    tscv = TimeSeriesSplit(n_splits, gap=gap)
     for name, config in get_model_grids().items():
-        tscv = TimeSeriesSplit(n_splits)
-        grid = GridSearchCV(config['model'], config['param_grid'], verbose=1, cv=tscv, scoring='r2')
-        grid.fit(X_train, y_train)
-        train_pred = grid.predict(X_train)
-        val_pred = grid.predict(X_val)
-        grid_results[name] = {
-            'best_model': grid.best_estimator_,
-            'best_params': grid.best_params_,
-            'train_r2': r2_score(y_train, train_pred),
-            'val_r2': r2_score(y_val, val_pred),
+        search = RandomizedSearchCV(
+            estimator=config["model"],
+            param_distributions=config["param_grid"],
+            n_iter=n_iter,
+            verbose=1,
+            cv=tscv,
+            scoring="neg_mean_absolute_error",
+            n_jobs=-1,
+            random_state=random_state,
+            refit=True,
+        )
+
+        search.fit(X_train, y_train)
+        train_pred = search.predict(X_train)
+        train_mae = -mean_absolute_error(y_train, train_pred)
+        search_results[name] = {
+            "best_model": search.best_estimator_,
+            "best_params": search.best_params_,
+            "best_cv_score": search.best_score_,
+            "train_mae": train_mae,
+            "cv_results": search.cv_results_,
         }
-        print(f"{name:20s} | Train R2: {grid_results[name]['train_r2']:.4f} | Val R2: {grid_results[name]['val_r2']:.4f}")
-    best_name = max(grid_results, key=lambda x: grid_results[x]['val_r2'])
-    best = grid_results[best_name]
-    print(f"\nBest model: {best_name}")
-    print(f"  Val R2: {best['val_r2']:.4f}")
-    print(f"  Params: {best['best_params']}")
-    return grid_results
+
+        print(
+            f"{name:20s} | "
+            f"Best CV score: {search.best_score_:.6f} | "
+            f"Train MAE: {train_mae:.6f} | "
+        )
+
+    best_name = max(
+        search_results,
+        key=lambda name: search_results[name]["best_cv_score"]
+    )
+    best = search_results[best_name]
+
+    print(
+        f"\nSelected model: {best_name}"
+        f"  Best CV score: {best['best_cv_score']:.6f}"
+        f"  Params: {best['best_params']}"
+    )
+    # return search results dictionary and the best model found
+    return search_results, best['best_model']
 
 
-def plot_permutation_importance(model, X_data, y_data, feature_cols, n_top=6):
-    result = permutation_importance(model, X_data, y_data, n_repeats=10, )
-    importance = result.importances_mean
-    sorted_idx = importance.argsort()
-    top_features = [feature_cols[i] for i in sorted_idx[-n_top:]]
-    plt.barh([feature_cols[i] for i in sorted_idx], importance[sorted_idx])
-    plt.title('Feature Importance')
-    plt.xlabel('Importance Score')
-    plt.tight_layout()
-    plt.show()
-    return top_features
+def evaluate_top_model(model, X_train, y_train, X_predict, y_predict, top_features, predict):
+    # select features if provided
+    if top_features is not None:
+        X_train_selected = X_train.loc[:, top_features]
+        X_predict_selected = X_predict.loc[:, top_features]
+    else:
+        X_train_selected = X_train
+        X_predict_selected = X_predict
+
+    
+    if predict == 'val':
+        # fit train data and predict validation data
+        validation_model = clone(model)
+        validation_model.fit(X_train_selected, y_train)
+        result_pred = validation_model.predict(X_predict_selected)
+
+    if predict == 'test':
+        # combine training and validation data
+        X_train_val = pd.concat([X_train_selected, X_predict_selected],axis=0)
+        y_train_val = pd.concat([y_train, y_predict],axis=0)
+
+        # take train + validation then predict test data
+        final_model = clone(model)
+        final_model.fit(X_train_val, y_train_val)
+        result_pred = final_model.predict(X_test_top)
+
+    print('-' * 40)
+    print(f'NEG MAE: {-mean_absolute_error(y_predict, result_pred)}')
+    print('-' * 40)
+    return result_pred
 
 
-def evaluate_top_model(model, X_train, y_train, X_val, y_val, X_test, y_test, top_features):
-    """Re-fit model on top features and calculate R2 scores."""
-    X_train_top = X_train[top_features]
-    X_val_top = X_val[top_features]
-    X_test_top = X_test[top_features]
 
-    model.fit(X_train_top, y_train)
-
-    train_pred = model.predict(X_train_top)
-    val_pred = model.predict(X_val_top)
-    test_pred = model.predict(X_test_top)
-
-    results = {
-        'train_r2': r2_score(y_train, train_pred),
-        'val_r2': r2_score(y_val, val_pred),
-        'test_r2': r2_score(y_test, test_pred)
-    }
-    print(f"Train R2: {results['train_r2']:.4f}")
-    print(f"Val R2: {results['val_r2']:.4f}")
-    print(f"Test R2: {results['test_r2']:.4f}")
-    return results
-
-
+'''
 def evaluate_direction(model, X_train, y_train, X_test, y_test):
     """Evaluate if predictions match actual direction."""
     train_pred = model.predict(X_train)
     test_pred = model.predict(X_test)
+
+    # Convert log returns to real returns
+    y_train_real = np.exp(y_train) - 1
+    y_test_real = np.exp(y_test) - 1
+    train_pred_real = np.exp(train_pred) - 1
+    test_pred_real = np.exp(test_pred) - 1
+
 
     train_dir = np.sign(y_train) == np.sign(train_pred)
     test_dir = np.sign(y_test) == np.sign(test_pred)
@@ -163,9 +106,14 @@ def evaluate_direction(model, X_train, y_train, X_test, y_test):
     results = {
         'train_direction_accuracy': train_dir.mean(),
         'test_direction_accuracy': test_dir.mean(),
+        'train_diff_realpred': train_pred_real,
+        'test_diff_realpred': test_pred_real
     }
 
     print(f"Train direction accuracy: {results['train_direction_accuracy']:.4f}")
     print(f"Test direction accuracy: {results['test_direction_accuracy']:.4f}")
+    #print(results['train_diff_realpred'])
+    #print(results['test_diff_realpred'])
 
     return results
+'''
