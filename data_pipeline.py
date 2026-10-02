@@ -2,9 +2,8 @@ import yfinance as yf
 import numpy as np
 import talib as ta
 
-
 def download_df(ticker, period):
-    """get historical data for the ticker arg"""
+    """get historical data for the ticker arg over the given period"""
     df = yf.download(ticker, period=period).droplevel('Ticker', axis=1)
     print('-' * 40)
     print(f"length of returned dataframe: {len(df)}")
@@ -20,7 +19,7 @@ def download_df(ticker, period):
 
 
 def df_feature_preparation(df):
-    """compute RSI features and signals for long and short positions"""
+    """compute features from the data for the model"""
     df = df.copy()
 
     open_price = df["Open"]
@@ -98,7 +97,7 @@ def df_feature_preparation(df):
 
 
 def create_label_column(df, col='Close', window=5):
-    """takes 'window' of rows and subtracts the highest 'Close' to calculate return"""
+    """takes 'window' of rows and subtracts the max 'Close' to calculate best possible return"""
     future_max = (
         df[col]
         .iloc[::-1]
@@ -111,17 +110,19 @@ def create_label_column(df, col='Close', window=5):
     return df.dropna(subset=["label"])
 
 
-def split_train_val_test_data(df, feature_cols, target_col, train_size=0.7, val_test_size=0.15):
+def split_train_val_test_data(df, feature_cols, target_col, train_size=0.7, val_test_size=0.15, gap=5):
     """split dataframe into train, val, and test sets"""
     train_len = int(train_size * len(df))
     val_test_len = int(val_test_size * len(df))
 
-    train_df= df[:train_len]
-    val_df = df[train_len:train_len + val_test_len]
-    test_df = df[train_len + val_test_len:]
+    # remove rows that would cause data leakage between splits
+    train_df= df.iloc[:train_len - gap]
+    val_df = df.iloc[train_len:train_len + val_test_len - gap]
+    test_df = df.iloc[train_len + val_test_len:]
 
     X_train, y_train = train_df[feature_cols], train_df[target_col]
     X_val, y_val = val_df[feature_cols], val_df[target_col]
     X_test, y_test = test_df[feature_cols], test_df[target_col]
 
+    print(f"split rows -> train: {len(X_train)}, val: {len(X_val)}, test: {len(X_test)}")
     return X_train, y_train, X_val, y_val, X_test, y_test
