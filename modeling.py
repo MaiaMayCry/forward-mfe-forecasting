@@ -29,7 +29,7 @@ def run_randomized_search(X_train, y_train, gap, n_splits=5, n_iter=50, random_s
         search_results[name] = {
             "best_model": search.best_estimator_,
             "best_params": search.best_params_,
-            "best_cv_score": -search.best_score_,
+            "best_cv_score": search.best_score_,
             "train_mae": train_mae,
             "cv_results": search.cv_results_,
         }
