@@ -1,26 +1,35 @@
-from rsi_data import download_df, df_feature_preparation, create_label_column, split_train_val_test_data
+from data_pipeline import download_df, df_feature_preparation, create_label_column, split_train_val_test_data
 from feature_filtering import remove_correlated_features, calc_permutation_importance, select_important_features
-from model_comparison import run_randomized_search, evaluate_top_model, get_best_by_mae
+from modeling import run_randomized_search, evaluate_top_model, get_best_by_mae
 
 TICKER = 'AAPL'
 PERIOD = '15y'
 CORR_THRESHOLD = 0.95
 LABEL_WINDOW = 5
 
-def main():    
+def main():
+    # get dataframe, create features and label column
     df = download_df(TICKER, PERIOD)
-    df_rsi = df_feature_preparation(df)
-    df_rsi_labeled = create_label_column(df_rsi)
+    df_feature = df_feature_preparation(df)
+    df_feature_labeled = create_label_column(df_feature)
 
-    feature_cols = [col for col in df_rsi_labeled.columns if col != 'label']
-    X_train, y_train, X_val, y_val, X_test, y_test = split_train_val_test_data(df_rsi_labeled, feature_cols, target_col='label', gap=LABEL_WINDOW)
+    # split dataframes in train, val and test data
+    # separate target from feature cols
+    feature_cols = [col for col in df_feature_labeled.columns if col != 'label']
+    X_train, y_train, X_val, y_val, X_test, y_test = split_train_val_test_data(df_feature_labeled, feature_cols, target_col='label', gap=LABEL_WINDOW)
 
+    # remove features with correlation over the CORR_THRESHOLD
+    # and run the randomized search on the returned features
     X_train_low_corr = remove_correlated_features(X_train, CORR_THRESHOLD, 'spearman')
     search_results = run_randomized_search(X_train_low_corr, y_train, gap=LABEL_WINDOW)
 
+    # calculate permutation importance and get top features
+    # for the best models in the serach_results
     permutation_results = calc_permutation_importance(search_results, X_train_low_corr, y_train, train_fract=0.2, gap=LABEL_WINDOW)
     top_features = select_important_features(permutation_results, n_top=None, require_lower=True)
 
+    # evaluate the top models and features on validation data
+    # then choose best for final run on test data
     model_results = evaluate_top_model(
         search_results,
         top_features,
@@ -33,7 +42,6 @@ def main():
         gap=LABEL_WINDOW,
         suite='val'
     )
-    # select the winner on validation
     best_name, best_val = get_best_by_mae(model_results)
     print(f'\nBest on validation: {best_name} (MAE {best_val["mae"]:.6f})')
     evaluate_top_model(
