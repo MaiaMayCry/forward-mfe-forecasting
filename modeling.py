@@ -3,7 +3,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.base import clone
 import pandas as pd
 
-from model_grid import get_model_grids
+from model_configs import get_model_grids
 
 def run_randomized_search(X_train, y_train, gap, n_splits=5, n_iter=50, random_state=42):
     """do a randomized search through the param_grids from the models"""
