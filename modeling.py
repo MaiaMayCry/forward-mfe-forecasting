@@ -55,7 +55,7 @@ def run_randomized_search(X_train, y_train, gap, n_splits=5, n_iter=50, random_s
     return top_4
 
 
-def evaluate_top_model(search_results, top_features, X_train, y_train, X_test, y_test, X_val, y_val, gap=5, suite='test'):
+def evaluate_top_model(search_results, top_features, X_train, y_train, X_test, y_test, X_val, y_val, suite='test'):
     """train the models in the search_results with the given top_features on either the validation or test data"""
     results = {}
 

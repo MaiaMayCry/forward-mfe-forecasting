@@ -1,8 +1,9 @@
 from data_pipeline import download_df, df_feature_preparation, create_label_column, split_train_val_test_data
 from feature_filtering import remove_correlated_features, calc_permutation_importance, select_important_features
 from modeling import run_randomized_search, evaluate_top_model, get_best_by_mae
+from baselines import evaluate_baselines
 
-TICKER = 'AAPL'
+TICKER = 'SPY'
 PERIOD = '15y'
 CORR_THRESHOLD = 0.95
 LABEL_WINDOW = 5
@@ -39,12 +40,12 @@ def main():
         y_test,
         X_val,
         y_val,
-        gap=LABEL_WINDOW,
         suite='val'
     )
     best_name, best_val = get_best_by_mae(model_results)
-    print(f'\nBest on validation: {best_name} (MAE {best_val["mae"]:.6f})')
-    evaluate_top_model(
+    print(f'Best on validation: {best_name} (MAE {best_val["mae"]:.6f})')
+    print(f'\nTest Data Results: ')
+    final_test = evaluate_top_model(
         {best_name: search_results[best_name]},
         top_features,
         X_train,
@@ -53,9 +54,15 @@ def main():
         y_test,
         X_val,
         y_val,
-        gap=LABEL_WINDOW,
         suite='test'
     )
+    # get baseline results to compare the validation models
+    # returns a mean, median and zero-return target
+    baseline_test = evaluate_baselines(X_train, y_train, X_val, y_val, X_test, y_test)
+    best_test_mae = final_test[best_name]["mae"]
+    for name, res in baseline_test.items():
+        ratio = res["mae"] / best_test_mae
+        print(f'  {name:16s} | MAE {res["mae"]:.6f} | {ratio:.2f}x model error')
     
 
 if __name__ == "__main__":
