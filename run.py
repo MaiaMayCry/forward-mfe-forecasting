@@ -16,7 +16,7 @@ def main():
     # get dataframe, create features and label column
     df = download_df(TICKER, PERIOD)
     df_feature = df_feature_preparation(df)
-    df_feature_labeled = create_label_column(df_feature)
+    df_feature_labeled = create_label_column(df_feature, window=LABEL_WINDOW)
 
     # split dataframes in train, val and test data
     # separate target from feature cols
