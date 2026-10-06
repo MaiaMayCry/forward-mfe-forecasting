@@ -16,13 +16,13 @@ def main():
 
     # split dataframes in train, val and test data
     # separate target from feature cols
-    feature_cols = [col for col in df_feature_labeled.columns if col != 'label']
-    X_train, y_train, X_val, y_val, X_test, y_test = split_train_val_test_data(df_feature_labeled, feature_cols, target_col='label', gap=LABEL_WINDOW)
+    feature_cols = [col for col in df_feature_labeled.columns if col != 'max_future_return']
+    X_train, y_train, X_val, y_val, X_test, y_test = split_train_val_test_data(df_feature_labeled, feature_cols, target_col='max_future_return', gap=LABEL_WINDOW)
 
     # remove features with correlation over the CORR_THRESHOLD
     # and run the randomized search on the returned features
     X_train_low_corr = remove_correlated_features(X_train, CORR_THRESHOLD, 'spearman')
-    search_results = run_randomized_search(X_train_low_corr, y_train, gap=LABEL_WINDOW)
+    search_results = run_randomized_search(X_train_low_corr, y_train, gap=LABEL_WINDOW, n_iter=15)
 
     # calculate permutation importance and get top features
     # for the best models in the serach_results

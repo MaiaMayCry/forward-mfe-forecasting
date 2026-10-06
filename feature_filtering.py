@@ -22,6 +22,7 @@ def remove_correlated_features(X_train, threshold, filter_method):
     ]
 
     X_train_low_corr = X_train.drop(columns=to_drop)
+    print('-' * 40)
     print(f"Dropped columns with threshold of {threshold} ({len(to_drop)}): ", to_drop)
     print('-' * 40)
     print(f"Selected Features ({len(X_train_low_corr.columns)}): ", X_train_low_corr.columns)
