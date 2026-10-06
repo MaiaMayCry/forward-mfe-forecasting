@@ -1,7 +1,10 @@
 import pandas as pd
 import numpy as np
+import logging
 from sklearn.inspection import permutation_importance
 from sklearn.base import clone
+
+log = logging.getLogger(__name__)
 
 def remove_correlated_features(X_train, threshold, filter_method):
     """remove features that have a correlation over the threshold"""
@@ -22,11 +25,8 @@ def remove_correlated_features(X_train, threshold, filter_method):
     ]
 
     X_train_low_corr = X_train.drop(columns=to_drop)
-    print('-' * 40)
-    print(f"Dropped columns with threshold of {threshold} ({len(to_drop)}): ", to_drop)
-    print('-' * 40)
-    print(f"Selected Features ({len(X_train_low_corr.columns)}): ", X_train_low_corr.columns)
-    print('-' * 40)
+    log.debug(f"Dropped columns with threshold of {threshold} ({len(to_drop)}): {to_drop}")
+    log.info(f"Selected Features ({len(X_train_low_corr.columns)}): {X_train_low_corr.columns}")
     return X_train_low_corr
 
 
@@ -81,8 +81,8 @@ def calc_permutation_importance(search_results, X_train, y_train, train_fract=0.
             "fit_rows": len(X_fit),
             "selection_rows": len(X_selection),
         }
-        print(f"\n{name}:")
-        print(importance_df.head(10))
+        log.debug(f"\n{name}:")
+        log.debug(importance_df.head(10))
     return permutation_results
 
 
@@ -108,10 +108,9 @@ def select_important_features(permutation_results, feature_limit=None, require_l
             filtered = filtered.head(feature_limit)
 
         top_features[name] = filtered['feature'].tolist()
-        print('-' * 40)
         if not top_features[name]:
-            print(f"{name}: no feature passed the threshold, falling back to all features")
+            log.warn(f"{name}: no feature passed the threshold, falling back to all features")
         else:
-            print(f"{name} ({len(top_features[name])} features): {top_features[name]}")
+            log.info(f"{name} ({len(top_features[name])} features): {top_features[name]}")
     
     return top_features

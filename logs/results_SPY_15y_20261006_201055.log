@@ -1,0 +1,36 @@
+20:10:55 | INFO   | data_pipeline | 
+Loading existing data from: data/yf_SPY_15y.parquet
+20:10:55 | INFO   | feature_filtering | Selected Features (23): Index(['Close_to_EMA_9', 'Close_to_EMA_26', 'EMA_9_to_EMA_26',
+       'SMA_9_to_SMA_12', 'SMA_9_to_SMA_26', 'MACD_signal_relative',
+       'MACD_histogram_relative', 'MACD_slope', 'RSI_5', 'RSI_9',
+       'RSI_14_above_70', 'RSI_14_below_30', 'RSI_14_change', 'LogReturns_3',
+       'LogReturns_5', 'LogReturns_10', 'PctReturn_15', 'Range_relative',
+       'Body_relative', 'Open_log_diff', 'High_log_diff', 'Low_log_diff',
+       'Volume_log_diff'],
+      dtype='str', name='Price')
+20:11:04 | INFO   | modeling | XGBoost              | Best CV score: -0.008113 | Train MAE: 0.007034 | 
+20:11:13 | INFO   | modeling | HistGradientBoosting | Best CV score: -0.008042 | Train MAE: 0.006002 | 
+20:11:44 | INFO   | modeling | RandomForest         | Best CV score: -0.008124 | Train MAE: 0.006046 | 
+20:11:57 | INFO   | modeling | ExtraTrees           | Best CV score: -0.008065 | Train MAE: 0.005340 | 
+20:12:14 | INFO   | modeling | GradientBoosting     | Best CV score: -0.008064 | Train MAE: 0.007074 | 
+20:12:14 | INFO   | modeling | Ridge                | Best CV score: -0.007940 | Train MAE: 0.007614 | 
+20:12:14 | INFO   | modeling | ElasticNet           | Best CV score: -0.007961 | Train MAE: 0.007643 | 
+20:12:14 | INFO   | modeling | Ridge: CV=-0.007940, Params={'model__tol': 0.01, 'model__solver': 'lsqr', 'model__fit_intercept': True, 'model__alpha': 0.01}
+20:12:14 | INFO   | modeling | ElasticNet: CV=-0.007961, Params={'model__tol': 0.001, 'model__positive': False, 'model__max_iter': 50000, 'model__l1_ratio': 0.95, 'model__fit_intercept': True, 'model__alpha': 0.0001}
+20:12:14 | INFO   | modeling | HistGradientBoosting: CV=-0.008042, Params={'min_samples_leaf': 50, 'max_leaf_nodes': 63, 'max_iter': 100, 'learning_rate': 0.03, 'l2_regularization': 1.0}
+20:12:14 | INFO   | modeling | GradientBoosting: CV=-0.008064, Params={'subsample': 1.0, 'n_estimators': 100, 'min_samples_leaf': 5, 'max_depth': 2, 'loss': 'squared_error', 'learning_rate': 0.05}
+20:12:22 | INFO   | feature_filtering | Ridge (15 features): ['Range_relative', 'High_log_diff', 'Body_relative', 'EMA_9_to_EMA_26', 'Low_log_diff', 'RSI_14_change', 'LogReturns_5', 'MACD_signal_relative', 'RSI_14_below_30', 'MACD_histogram_relative', 'PctReturn_15', 'SMA_9_to_SMA_26', 'MACD_slope', 'Close_to_EMA_26', 'Volume_log_diff']
+20:12:22 | INFO   | feature_filtering | ElasticNet (5 features): ['EMA_9_to_EMA_26', 'Range_relative', 'LogReturns_5', 'Body_relative', 'RSI_14_below_30']
+20:12:22 | INFO   | feature_filtering | HistGradientBoosting (10 features): ['Close_to_EMA_26', 'LogReturns_5', 'RSI_9', 'SMA_9_to_SMA_26', 'Range_relative', 'RSI_5', 'High_log_diff', 'RSI_14_change', 'EMA_9_to_EMA_26', 'MACD_signal_relative']
+20:12:22 | INFO   | feature_filtering | GradientBoosting (12 features): ['LogReturns_5', 'Close_to_EMA_26', 'EMA_9_to_EMA_26', 'RSI_9', 'SMA_9_to_SMA_26', 'High_log_diff', 'MACD_signal_relative', 'Range_relative', 'Open_log_diff', 'PctReturn_15', 'LogReturns_3', 'RSI_14_above_70']
+20:12:22 | INFO   | modeling | Ridge                | MAE: 0.009930 | n_features: 15
+20:12:22 | INFO   | modeling | ElasticNet           | MAE: 0.010105 | n_features: 5
+20:12:23 | INFO   | modeling | HistGradientBoosting | MAE: 0.009931 | n_features: 10
+20:12:24 | INFO   | modeling | GradientBoosting     | MAE: 0.010109 | n_features: 12
+20:12:24 | INFO   | __main__ | Best on validation: Ridge (MAE 0.009930)
+20:12:24 | INFO   | __main__ | 
+Test Data Results: 
+20:12:24 | INFO   | modeling | Ridge                | MAE: 0.007845 | n_features: 15
+20:12:24 | INFO   | __main__ | zero_return      | MAE 0.014010 | 1.79x model error
+20:12:24 | INFO   | __main__ | mean_target      | MAE 0.009109 | 1.16x model error
+20:12:24 | INFO   | __main__ | median_target    | MAE 0.008645 | 1.10x model error

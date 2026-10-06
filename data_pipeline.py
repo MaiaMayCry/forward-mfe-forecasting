@@ -1,21 +1,34 @@
+import os
+import logging
+import pandas as pd
 import yfinance as yf
 import numpy as np
 import talib as ta
 
+log = logging.getLogger(__name__)
+
 def download_df(ticker, period):
     """get historical data for the ticker arg over the given period"""
-    df = yf.download(ticker, period=period).droplevel('Ticker', axis=1)
-    print('-' * 40)
-    print(f"length of returned dataframe: {len(df)}")
-    print('-' * 40)
-    print(f"sum of nan values across dataframe: {df.isna().sum().sum()}")
-    print('-' * 40)
-    print(f"sum of zeroes across dataframe: {(df == 0).sum().sum()}")
-    print('-' * 40)
+    filepath = f"data/yf_{ticker}_{period}.parquet"
+
+    # if file already exists
+    if os.path.exists(filepath):
+        log.info(f"\nLoading existing data from: {filepath}")
+        df = pd.read_parquet(filepath)
+    else:
+        log.info(f"\nDownloading data: {ticker} ({period}) from yfinance...\n")
+        df = yf.download(ticker, period=period).droplevel('Ticker', axis=1)
+        # save to parquet
+        os.makedirs("data", exist_ok=True)
+        df.to_parquet(filepath)
+
+    log.debug(f"length of returned dataframe: {len(df)}")
+    log.debug(f"sum of nan values across dataframe: {df.isna().sum().sum()}")
+    log.debug(f"sum of zeroes across dataframe: {(df == 0).sum().sum()}")
     if df.empty:
         raise ValueError("No data returned for this ticker/period")
-    else:
-        return df
+
+    return df
 
 
 def df_feature_preparation(df):
@@ -47,7 +60,7 @@ def df_feature_preparation(df):
     ema_vars = {9: ema_9, 12: ema_12, 26: ema_26}
     sma_vars = {9: sma_9, 12: sma_12, 26: sma_26}
 
-    # Moving-average relationships
+    # moving-average relationships
     for val in [9, 12, 26]:
         df[f"Close_to_EMA_{val}"] = close / ema_vars[val] - 1
         df[f"Close_to_SMA_{val}"] = close / sma_vars[val] - 1
@@ -75,15 +88,15 @@ def df_feature_preparation(df):
     df["RSI_14_below_30"] = (df["RSI_14"] < 0.30).astype(int)
     df["RSI_14_change"] = df["RSI_14"].diff()
 
-    # Log returns over lookback periods
+    # log returns over lookback periods
     for val in [1, 3, 5, 10]:
         df[f"LogReturns_{val}"] = log_close.diff(val)
 
-    # Ordinary percentage returns over lookback periods
+    # ordinary percentage returns over lookback periods
     for val in [3, 5, 10, 15]:
         df[f"PctReturn_{val}"] = close.pct_change(val)
 
-    # Candle features
+    # candle features
     df["Range_relative"] = (high - low) / open_price
     df["Body_relative"] = (close - open_price) / open_price
 
@@ -91,7 +104,7 @@ def df_feature_preparation(df):
     for column in ["Open", "High", "Low", "Close", "Volume"]:
         df[f"{column}_log_diff"] = np.log(df[column]).diff()
 
-    # Clean up
+    # clean up
     df = df.replace([np.inf, -np.inf], np.nan).dropna()
     return df
 
@@ -125,15 +138,15 @@ def split_train_val_test_data(df, feature_cols, target_col, train_size=0.7, val_
     X_val, y_val = val_df[feature_cols], val_df[target_col]
     X_test, y_test = test_df[feature_cols], test_df[target_col]
 
-    print(
+    log.debug(
         f"train: {train_df.index.min()} -> {train_df.index.max()} "
         f"({len(train_df)} rows)"
     )
-    print(
+    log.debug(
         f"validation: {val_df.index.min()} -> {val_df.index.max()} "
         f"({len(val_df)} rows)"
     )
-    print(
+    log.debug(
         f"test: {test_df.index.min()} -> {test_df.index.max()} "
         f"({len(test_df)} rows)"
     )
