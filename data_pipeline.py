@@ -96,18 +96,19 @@ def df_feature_preparation(df):
     return df
 
 
-def create_label_column(df, col='Close', window=5):
-    """takes 'window' of rows and subtracts the max 'Close' to calculate best possible return"""
+def create_label_column(df, window=5):
+    """highest return during the next five trading days, relative to entry price"""
+    entry_price = df["Open"].shift(-1)
     future_max = (
-        df[col]
+        df['High']
         .iloc[::-1]
         .rolling(window=window, min_periods=1)
         .max()
         .iloc[::-1]
         .shift(-1)
     )
-    df["label"] = future_max / df[col] - 1
-    return df.dropna(subset=["label"])
+    df["max_future_return"] = future_max / entry_price - 1
+    return df.dropna(subset=["max_future_return"])
 
 
 def split_train_val_test_data(df, feature_cols, target_col, train_size=0.7, val_test_size=0.15, gap=5):
