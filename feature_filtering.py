@@ -86,7 +86,7 @@ def calc_permutation_importance(search_results, X_train, y_train, train_fract=0.
     return permutation_results
 
 
-def select_important_features(permutation_results, n_top=None, require_lower=True):
+def select_important_features(permutation_results, feature_limit=None, require_lower=True):
     """select the features from the permutation to be used in the final model training"""
     top_features = {}
     for name, data in permutation_results.items():
@@ -104,8 +104,8 @@ def select_important_features(permutation_results, n_top=None, require_lower=Tru
         filtered = importance_df.loc[mask].sort_values('importance_mean', ascending=False)
         
         # set a limit for the number of features returned
-        if n_top is not None:
-            filtered = filtered.head(n_top)
+        if feature_limit is not None:
+            filtered = filtered.head(feature_limit)
 
         top_features[name] = filtered['feature'].tolist()
         print('-' * 40)

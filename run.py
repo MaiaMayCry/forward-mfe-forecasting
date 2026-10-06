@@ -1,14 +1,18 @@
+import argparse
 from data_pipeline import download_df, df_feature_preparation, create_label_column, split_train_val_test_data
 from feature_filtering import remove_correlated_features, calc_permutation_importance, select_important_features
 from modeling import run_randomized_search, evaluate_top_model, get_best_by_mae
 from baselines import evaluate_baselines
 
-TICKER = 'SPY'
-PERIOD = '15y'
-CORR_THRESHOLD = 0.95
-LABEL_WINDOW = 5
-
 def main():
+    args = parse_args()
+    TICKER = args.ticker
+    PERIOD = args.period
+    CORR_THRESHOLD = args.corr_threshold
+    LABEL_WINDOW = args.label_window
+    N_ITER = args.n_iter
+    RANDOM_STATE = args.random_state
+
     # get dataframe, create features and label column
     df = download_df(TICKER, PERIOD)
     df_feature = df_feature_preparation(df)
@@ -22,12 +26,12 @@ def main():
     # remove features with correlation over the CORR_THRESHOLD
     # and run the randomized search on the returned features
     X_train_low_corr = remove_correlated_features(X_train, CORR_THRESHOLD, 'spearman')
-    search_results = run_randomized_search(X_train_low_corr, y_train, gap=LABEL_WINDOW, n_iter=15)
+    search_results = run_randomized_search(X_train_low_corr, y_train, gap=LABEL_WINDOW, n_iter=N_ITER, random_state=RANDOM_STATE)
 
     # calculate permutation importance and get top features
     # for the best models in the serach_results
-    permutation_results = calc_permutation_importance(search_results, X_train_low_corr, y_train, train_fract=0.2, gap=LABEL_WINDOW)
-    top_features = select_important_features(permutation_results, n_top=None, require_lower=True)
+    perm_results = calc_permutation_importance(search_results, X_train_low_corr, y_train, train_fract=0.2, gap=LABEL_WINDOW, random_state=RANDOM_STATE)
+    top_features = select_important_features(perm_results, feature_limit=None, require_lower=True)
 
     # evaluate the top models and features on validation data
     # then choose best for final run on test data
@@ -63,6 +67,19 @@ def main():
     for name, res in baseline_test.items():
         ratio = res["mae"] / best_test_mae
         print(f'  {name:16s} | MAE {res["mae"]:.6f} | {ratio:.2f}x model error')
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--ticker", default="SPY")
+    parser.add_argument("--period", default="15y")
+    parser.add_argument("--corr-threshold", type=float, default=0.95)
+    parser.add_argument("--label-window", type=int, default=5)
+    parser.add_argument("--n-iter", type=int, default=15)
+    parser.add_argument("--random-state", type=int, default=42)
+
+    return parser.parse_args()
     
 
 if __name__ == "__main__":
