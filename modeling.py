@@ -2,8 +2,11 @@ from sklearn.model_selection import TimeSeriesSplit, RandomizedSearchCV
 from sklearn.metrics import mean_absolute_error
 from sklearn.base import clone
 import pandas as pd
+import logging
 
 from model_configs import get_model_grids
+
+log = logging.getLogger(__name__)
 
 def run_randomized_search(X_train, y_train, gap, n_splits=5, n_iter=50, random_state=42):
     """do a randomized search through the param_grids from the models"""
@@ -34,13 +37,13 @@ def run_randomized_search(X_train, y_train, gap, n_splits=5, n_iter=50, random_s
             "cv_results": search.cv_results_,
         }
 
-        print(
+        log.info(
             f"{name:20s} | "
             f"Best CV score: {search.best_score_:.6f} | "
             f"Train MAE: {train_mae:.6f} | "
         )
 
-    # Sort all models by CV score (descending) and take top 4
+    # sort all models by CV score (descending) and take top 4
     sorted_results = sorted(
         search_results.items(),
         key=lambda item: item[1]["best_cv_score"],
@@ -48,11 +51,9 @@ def run_randomized_search(X_train, y_train, gap, n_splits=5, n_iter=50, random_s
     )
     top_4 = dict(sorted_results[:4])
 
-    # Access them:
-    print('-' * 40)
+    # access them:
     for name, result in top_4.items():
-        print(f"{name}: CV={result['best_cv_score']:.6f}, Params={result['best_params']}")
-    print('-' * 40)
+        log.info(f"{name}: CV={result['best_cv_score']:.6f}, Params={result['best_params']}")
     # return search results dictionary and the best models found
     return top_4
 
@@ -60,7 +61,6 @@ def run_randomized_search(X_train, y_train, gap, n_splits=5, n_iter=50, random_s
 def evaluate_top_model(search_results, top_features, X_train, y_train, X_test, y_test, X_val, y_val, suite='test'):
     """train the models in the search_results with the given top_features on either the validation or test data"""
     results = {}
-    print('-' * 40)
     for name, result in search_results.items():
         model = result["best_model"]
         features = (top_features or {}).get(name) or None
@@ -98,8 +98,7 @@ def evaluate_top_model(search_results, top_features, X_train, y_train, X_test, y
         results[name] = {"pred": result_pred, "mae": mae}
 
         
-        print(f'{name:20s} | MAE: {mae:.6f} | n_features: {X_tr.shape[1]}')
-    print('-' * 40)
+        log.info(f'{name:20s} | MAE: {mae:.6f} | n_features: {X_tr.shape[1]}')
 
     return results
 
