@@ -47,12 +47,6 @@ def df_feature_preparation(df):
     ema_vars = {9: ema_9, 12: ema_12, 26: ema_26}
     sma_vars = {9: sma_9, 12: sma_12, 26: sma_26}
 
-    # MACD features
-    df['MACD_relative'] = macd / ema_26
-    df["MACD_signal_relative"] = macd_signal / ema_26
-    df["MACD_histogram_relative"] = macd_hist / ema_26
-    df["MACD_slope"] = macd.diff() / ema_26
-
     # Moving-average relationships
     for val in [9, 12, 26]:
         df[f"Close_to_EMA_{val}"] = close / ema_vars[val] - 1
@@ -66,6 +60,12 @@ def df_feature_preparation(df):
     df["SMA_9_to_SMA_12"] = sma_9 / sma_12 - 1
     df["SMA_9_to_SMA_26"] = sma_9 / sma_26 - 1
     df["SMA_12_to_SMA_26"] = sma_12 / sma_26 - 1
+
+    # MACD features
+    df['MACD_relative'] = macd / ema_26
+    df["MACD_signal_relative"] = macd_signal / ema_26
+    df["MACD_histogram_relative"] = macd_hist / ema_26
+    df["MACD_slope"] = macd.diff() / ema_26
         
     # RSI features
     for val in [5, 9, 14, 22]:
@@ -125,5 +125,16 @@ def split_train_val_test_data(df, feature_cols, target_col, train_size=0.7, val_
     X_val, y_val = val_df[feature_cols], val_df[target_col]
     X_test, y_test = test_df[feature_cols], test_df[target_col]
 
-    print(f"split rows -> train: {len(X_train)}, val: {len(X_val)}, test: {len(X_test)}")
+    print(
+        f"train: {train_df.index.min()} -> {train_df.index.max()} "
+        f"({len(train_df)} rows)"
+    )
+    print(
+        f"validation: {val_df.index.min()} -> {val_df.index.max()} "
+        f"({len(val_df)} rows)"
+    )
+    print(
+        f"test: {test_df.index.min()} -> {test_df.index.max()} "
+        f"({len(test_df)} rows)"
+    )
     return X_train, y_train, X_val, y_val, X_test, y_test
