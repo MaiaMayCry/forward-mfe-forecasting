@@ -37,10 +37,11 @@ python run.py \
 - **Data Pipeline**: Automated data processing, cleaning, and splitting with temporal gap to reduce leakage
 - **Feature Creation**: Engineering indicators such as RSI, MACD and EMA as features
 - **Correlation Filtering**: Removing highly correlated features with configurable coefficients (default `spearman`)
-- **Randomized Search CV**: Hyperparameter selection and testing of machine learning models
-- **Permutation Importance**: Testing features to assess statistical significance
+- **Randomized Search CV**: Hyperparameter selection for a collection of machine learning models
+- **Permutation Importance**: Testing features to assess statistical significance for each model
+- **Baseline Comparisons**: Model's performance is evaluated on hold-out data and compared against zero-return, mean and median baselines
 - **Model Configuration**: Modular configuration system for easy experimentation
-- **Baseline Comparisons**: Model's performance is compared against zero-return, mean and median baselines
+- **Logging**: File and console logging with configurable levels to track pipeline execution
 
 ## Evaluation Design
 
@@ -61,14 +62,39 @@ The default configuration is:
 | Randomized-search iterations | `15` |
 | Random state | `42` |
 
+## Results
+
+### Model Selection & Performance
+
+Evaluating the 4 best models on the validation data, Ridge has the best results and it's then used for the final run with the test-data
+
+| Model | Validation MAE | # Features | Test MAE |
+|-------|----------------|-----------|----------|
+| **Ridge** | 0.009930 | 15 | **0.007845** |
+| HistGradientBoosting | 0.009931 | 10 | — |
+| GradientBoosting | 0.010109 | 12 | — |
+| ElasticNet | 0.010105 | 5 | — |
+
+### Baseline Comparison
+
+The model significantly outperforms common naive prediction strategies by 10-79%:
+
+| Baseline Strategy | Test MAE | Error Ratio vs. Ridge |
+|-------------------|----------|----------------------|
+| **Ridge Model** | **0.007845** | — |
+| Median target value | 0.008645 | 1.10x |
+| Mean target value | 0.009109 | 1.16x |
+| Zero return (predict 0) | 0.014010 | 1.79x |
+
 ## Project structure
 
 ```text
 .
 ├── data\_pipeline.py      # Data download, feature engineering, labels, and splits
 ├── feature\_filtering.py  # Correlation filtering and permutation importance
-├── model\_configs.py      # Models and hyperparameter distributions
+├── model\_configs.py      # Models and hyperparameters to be used
 ├── modeling.py           # Model search and evaluation utilities
+├── logging_setup.py      # Logging configuration (file + console output)
 └── run.py                # Main pipeline entry point
 ```
 
@@ -83,5 +109,4 @@ The default configuration is:
 
 - Increase the amount of data by performing the test with multiple stocks
 - Implement walk forward validation on the model evaluation steps
-- Save experiment metrics and selected features to `results/` folder
 - Forecast potential loss as well as best return to create a proper trading strategy
