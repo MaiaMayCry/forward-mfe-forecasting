@@ -1,7 +1,10 @@
-# RSI Permutation Test
-The model predicts the maximum price movement within a future window, enabling dynamic profit targets and directional signals similar to Donchian Channels but with forward-looking predictions rather than historical lookback.
+# Forward Maximum Favorable Excursion
 
-The default configuration downloads 15 years of `SPY` market data and predicts the best achievable forward five-period return based on the subsequent closing prices.
+This project examines the prediction of **maximum favorable excursion (MFE)** over a fixed future window.
+
+The default configuration downloads 15 years of `SPY` market data and predicts the most favorable return available to a hypothetical long position entered at the next day’s open and held for up to five trading days.
+
+`max(high over next 5 trading days) / next day's open - 1`
 
 ## Installation and Usage
 
