@@ -1,6 +1,5 @@
 # RSI Permutation Test
-
-A time-series machine-learning pipeline for predicting the maximum short-term price return of stocks using RSI technical indicators, correlation filtering, permutation importance, and several regression models.
+The model predicts the maximum price movement within a future window, enabling dynamic profit targets and directional signals similar to Donchian Channels but with forward-looking predictions rather than historical lookback.
 
 The default configuration downloads 15 years of `SPY` market data and predicts the best achievable forward five-period return based on the subsequent closing prices.
 
