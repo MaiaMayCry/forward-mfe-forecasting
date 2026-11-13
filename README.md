@@ -80,7 +80,7 @@ Evaluating the 4 best models on the validation data, Ridge has the best results 
 
 ### Baseline Comparison
 
-The model significantly outperforms common naive prediction strategies by 10-79%:
+The model outperforms common naive prediction strategies by 10-79%:
 
 | Baseline Strategy | Test MAE | Error Ratio vs. Ridge |
 |-------------------|----------|----------------------|
