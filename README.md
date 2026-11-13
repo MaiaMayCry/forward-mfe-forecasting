@@ -11,8 +11,8 @@ The default configuration downloads 15 years of `SPY` market data and predicts t
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/MaiaMayCry/rsi\_permutation\_test.git
-cd rsi\_permutation\_test
+git clone https://github.com/MaiaMayCry/forward-mfe-forecasting.git
+cd forward-mfe-forecasting
 pip install -r requirements.txt 
 ```
 
