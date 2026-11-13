@@ -13,6 +13,7 @@ Clone the repository and install dependencies:
 ```bash
 git clone https://github.com/MaiaMayCry/forward-mfe-forecasting.git
 cd forward-mfe-forecasting
+python.exe -m pip install --upgrade pip
 pip install -r requirements.txt 
 ```
 
